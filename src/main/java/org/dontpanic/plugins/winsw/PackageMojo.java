@@ -55,6 +55,7 @@ public class PackageMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         File assemblyFile = new File(outputDirectory, zipFile + ".zip");
         try {
+            assemblyFile.getParentFile().mkdirs();
             assemblyFile.createNewFile();
             projectHelper.attachArtifact(project, ZIP_TYPE, classifier, assemblyFile);
         } catch (IOException e) {
