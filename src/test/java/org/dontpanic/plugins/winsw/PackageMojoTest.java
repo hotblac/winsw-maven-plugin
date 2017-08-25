@@ -66,19 +66,63 @@ public class PackageMojoTest {
     }
 
     @Test
-    public void mojoExecute_createsArtifact() throws Exception {
-
+    public void zipFile_isInOutputDirectory() throws Exception {
+        File outputDir = new File(DEFAULT_OUTPUT_DIR, "subdir");
         PackageMojo mojo = getMojoWithDefaultConfig();
+        mojoRule.setVariableValueToObject(mojo, "outputDirectory", outputDir);
         mojo.execute();
 
+        File expectedNewFile = new File(outputDir, DEFAULT_FILE_NAME + ".zip");
+        assertTrue(expectedNewFile.exists());
+    }
+
+    @Test
+    public void zipFileName_isPackageName() throws Exception {
+        final String packageName = "packageName";
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojoRule.setVariableValueToObject(mojo, "packageName", packageName);
+        mojo.execute();
+
+        File expectedNewFile = new File(DEFAULT_OUTPUT_DIR, packageName + ".zip");
+        assertTrue(expectedNewFile.exists());
+    }
+
+    @Test
+    public void mojoExecute_createsArtifact() throws Exception {
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
+        verify(projectHelper).attachArtifact(eq(mavenProject), anyString(), anyString(), any(File.class));
+    }
+
+    @Test
+    public void createdArtifactType_isZip() throws Exception {
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
         verify(projectHelper).attachArtifact(eq(mavenProject), eq("zip"), anyString(), any(File.class));
+    }
+
+    @Test
+    public void createdArtifactClassifier_isGivenClassifier() throws Exception {
+        final String expectedClassifer = "expectedClassifier";
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojoRule.setVariableValueToObject(mojo, "classifier", expectedClassifer);
+        mojo.execute();
+        verify(projectHelper).attachArtifact(eq(mavenProject), anyString(), eq(expectedClassifer), any(File.class));
+    }
+
+    @Test
+    public void createdArtifactFile_isBuiltZip() throws Exception {
+        File expectedNewFile = new File(DEFAULT_OUTPUT_DIR, DEFAULT_FILE_NAME + ".zip");
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
+        verify(projectHelper).attachArtifact(eq(mavenProject), anyString(), anyString(), eq(expectedNewFile));
     }
 
     private PackageMojo getMojoWithDefaultConfig() throws Exception {
         PackageMojo mojo = lookupMojo();
         mojoRule.setVariableValueToObject(mojo, "projectHelper", projectHelper);
         mojoRule.setVariableValueToObject(mojo, "project", mavenProject);
-        mojoRule.setVariableValueToObject(mojo, "zipFile", DEFAULT_FILE_NAME);
+        mojoRule.setVariableValueToObject(mojo, "packageName", DEFAULT_FILE_NAME);
         mojoRule.setVariableValueToObject(mojo, "outputDirectory", DEFAULT_OUTPUT_DIR);
         return mojo;
     }

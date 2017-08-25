@@ -35,10 +35,10 @@ public class PackageMojo extends AbstractMojo {
     private String classifier;
 
     /**
-     * Name of generated package file
+     * Name of zip package file to generate
      */
     @Parameter (defaultValue = "${project.build.finalName}", required = true, readonly = true)
-    private String zipFile;
+    private String packageName;
 
     /**
      * The Maven project.
@@ -53,7 +53,7 @@ public class PackageMojo extends AbstractMojo {
     private MavenProjectHelper projectHelper;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        File assemblyFile = new File(outputDirectory, zipFile + ".zip");
+        File assemblyFile = new File(outputDirectory, packageName + ".zip");
         try {
             assemblyFile.getParentFile().mkdirs();
             assemblyFile.createNewFile();

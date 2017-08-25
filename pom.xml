@@ -8,6 +8,13 @@
   <packaging>maven-plugin</packaging>
 
   <name>winsw Maven Plugin</name>
+  <description>
+      A Maven Plugin to package a (Spring Boot) executable JAR as a Windows service
+      installer package. The resulting package contains the executable JAR plus the
+      necessary executable and configuration files to install the JAR as a Windows
+      service.
+  </description>
+
 
   <url>https://github.com/hotblac/winsw-maven-plugin</url>
 
@@ -85,4 +92,23 @@
       </plugin>
     </plugins>
   </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <minmemory>128m</minmemory>
+          <maxmemory>512</maxmemory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.1</version>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>
