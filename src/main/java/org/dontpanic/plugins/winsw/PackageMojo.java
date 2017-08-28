@@ -9,9 +9,13 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
+import org.codehaus.plexus.archiver.Archiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * Build a winsw release package from the current project
@@ -19,8 +23,9 @@ import java.io.IOException;
 @Mojo( name = "package", defaultPhase = LifecyclePhase.PACKAGE )
 public class PackageMojo extends AbstractMojo {
 
-    private static final String ZIP_TYPE = "zip";
-    private static final String DEFAULT_CLASSIFIER = "winsw";
+    static final String ZIP_TYPE = "zip";
+    static final String DEFAULT_CLASSIFIER = "winsw";
+    static final String WINSW_EXE_FILENAME = "winsw.exe";
 
     /**
      * The directory location for the generated zip.
@@ -52,16 +57,38 @@ public class PackageMojo extends AbstractMojo {
     @Component
     private MavenProjectHelper projectHelper;
 
+    @Component
+    private ArchiverManager archiverManager;
+
     public void execute() throws MojoExecutionException, MojoFailureException {
         File assemblyFile = new File(outputDirectory, packageName + ".zip");
+        createAssemblyFile(assemblyFile);
+        projectHelper.attachArtifact(project, ZIP_TYPE, classifier, assemblyFile);
+    }
+
+    private void createAssemblyFile(File file) throws MojoExecutionException {
         try {
-            assemblyFile.getParentFile().mkdirs();
-            assemblyFile.createNewFile();
-            projectHelper.attachArtifact(project, ZIP_TYPE, classifier, assemblyFile);
+            Archiver archiver = archiverManager.getArchiver(ZIP_TYPE);
+            archiver.setDestFile(file);
+            addWinsw(archiver);
+            archiver.createArchive();
+        } catch (NoSuchArchiverException e) {
+            String message = "Cannot create archiver for type " + ZIP_TYPE;
+            getLog().error(message);
+            throw new MojoExecutionException(message, e);
         } catch (IOException e) {
-            String message = "Failed to create file '" + assemblyFile + "'";
+            String message = "Failed to create file '" + file + "'";
             getLog().error(message);
             throw new MojoExecutionException(message, e);
         }
+    }
+
+
+    private void addWinsw(Archiver archiver) throws MojoExecutionException, IOException {
+
+        // TODO: Get real file from plugin dependencies
+        File winswFile = new File(outputDirectory, WINSW_EXE_FILENAME);
+        winswFile.createNewFile();
+        archiver.addFile(winswFile, WINSW_EXE_FILENAME);
     }
 }

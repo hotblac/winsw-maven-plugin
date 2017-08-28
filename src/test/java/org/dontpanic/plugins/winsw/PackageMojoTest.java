@@ -5,6 +5,8 @@ import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.stubs.MavenProjectStub;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.zip.ZipArchiver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,14 +16,19 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.File;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static junit.framework.TestCase.assertFalse;
+import static org.dontpanic.plugins.winsw.PackageMojo.WINSW_EXE_FILENAME;
+import static org.dontpanic.plugins.winsw.PackageMojo.ZIP_TYPE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * winsw package test case
@@ -39,10 +46,12 @@ public class PackageMojoTest {
 
     private MavenProject mavenProject = new MavenProjectStub();
     @Mock private MavenProjectHelper projectHelper;
+    @Mock private ArchiverManager archiverManager;
 
     @Before
     public void setUp() throws Exception {
         assertFalse(DEFAULT_OUTPUT_DIR.exists());
+        when(archiverManager.getArchiver(ZIP_TYPE)).thenReturn(new ZipArchiver());
     }
 
     @After
@@ -87,6 +96,16 @@ public class PackageMojoTest {
         assertTrue(expectedNewFile.exists());
     }
 
+    public void zipFile_containsWinSwExe() throws Exception {
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
+        File createdFile = new File(DEFAULT_OUTPUT_DIR, DEFAULT_FILE_NAME + ".zip");
+        ZipFile zipFile = new ZipFile(createdFile);
+
+        ZipEntry winswEntry = zipFile.getEntry(WINSW_EXE_FILENAME);
+        assertNotNull(winswEntry);
+    }
+
     @Test
     public void mojoExecute_createsArtifact() throws Exception {
         PackageMojo mojo = getMojoWithDefaultConfig();
@@ -98,7 +117,7 @@ public class PackageMojoTest {
     public void createdArtifactType_isZip() throws Exception {
         PackageMojo mojo = getMojoWithDefaultConfig();
         mojo.execute();
-        verify(projectHelper).attachArtifact(eq(mavenProject), eq("zip"), anyString(), any(File.class));
+        verify(projectHelper).attachArtifact(eq(mavenProject), eq(ZIP_TYPE), anyString(), any(File.class));
     }
 
     @Test
@@ -121,6 +140,7 @@ public class PackageMojoTest {
     private PackageMojo getMojoWithDefaultConfig() throws Exception {
         PackageMojo mojo = lookupMojo();
         mojoRule.setVariableValueToObject(mojo, "projectHelper", projectHelper);
+        mojoRule.setVariableValueToObject(mojo, "archiverManager", archiverManager);
         mojoRule.setVariableValueToObject(mojo, "project", mavenProject);
         mojoRule.setVariableValueToObject(mojo, "packageName", DEFAULT_FILE_NAME);
         mojoRule.setVariableValueToObject(mojo, "outputDirectory", DEFAULT_OUTPUT_DIR);
