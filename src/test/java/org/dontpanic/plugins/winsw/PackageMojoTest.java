@@ -1,7 +1,9 @@
 package org.dontpanic.plugins.winsw;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.testing.MojoRule;
+import org.apache.maven.plugin.testing.stubs.ArtifactStub;
 import org.apache.maven.plugin.testing.stubs.MavenProjectStub;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
@@ -16,12 +18,13 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static junit.framework.TestCase.assertFalse;
-import static org.dontpanic.plugins.winsw.PackageMojo.WINSW_EXE_FILENAME;
-import static org.dontpanic.plugins.winsw.PackageMojo.ZIP_TYPE;
+import static org.dontpanic.plugins.winsw.PackageMojo.*;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -52,6 +55,10 @@ public class PackageMojoTest {
     public void setUp() throws Exception {
         assertFalse(DEFAULT_OUTPUT_DIR.exists());
         when(archiverManager.getArchiver(ZIP_TYPE)).thenReturn(new ZipArchiver());
+
+        Set<Artifact> dependencies = new HashSet<>();
+        dependencies.add(winswArtifact());
+        mavenProject.setDependencyArtifacts(dependencies);
     }
 
     @After
@@ -147,10 +154,32 @@ public class PackageMojoTest {
         return mojo;
     }
 
-    protected PackageMojo lookupMojo() throws Exception {
+    private PackageMojo lookupMojo() throws Exception {
         File pomFile = new File(DEFAULT_POM_PATH);
         PackageMojo mojo = (PackageMojo) mojoRule.lookupMojo( "package", pomFile );
         assertNotNull( mojo );
         return mojo;
     }
+
+    private Artifact winswArtifact() {
+
+        // Anonymous subclass ArtifactStub as ArtifactStub does not allow
+        // type or classifer to be set.
+        Artifact winswDependency = new ArtifactStub() {
+            @Override
+            public String getType() {
+                return WINSW_TYPE;
+            }
+
+            @Override
+            public String getClassifier() {
+                return WINSW_CLASSIFIER;
+            }
+        };
+        winswDependency.setGroupId(WINSW_GROUPID);
+        winswDependency.setArtifactId(WINSW_ARTIFACTID);
+        winswDependency.setFile(new File("src/test/resources/unit/winsw-maven-plugin-test/winswstub.exe"));
+        return winswDependency;
+    }
+
 }

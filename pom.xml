@@ -19,6 +19,9 @@
     <url>https://github.com/hotblac/winsw-maven-plugin</url>
 
     <properties>
+        <javaVersion>7</javaVersion>
+        <maven.compiler.source>1.${javaVersion}</maven.compiler.source>
+        <maven.compiler.target>1.${javaVersion}</maven.compiler.target>
         <winswVersion>2.1.2</winswVersion>
         <mavenVersion>3.3.3</mavenVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -114,6 +117,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>

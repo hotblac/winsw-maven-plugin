@@ -1,5 +1,6 @@
 package org.dontpanic.plugins.winsw;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -15,7 +16,7 @@ import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.util.Set;
 
 /**
  * Build a winsw release package from the current project
@@ -26,6 +27,10 @@ public class PackageMojo extends AbstractMojo {
     static final String ZIP_TYPE = "zip";
     static final String DEFAULT_CLASSIFIER = "winsw";
     static final String WINSW_EXE_FILENAME = "winsw.exe";
+    static final String WINSW_GROUPID = "com.sun.winsw";
+    static final String WINSW_ARTIFACTID = "winsw";
+    static final String WINSW_CLASSIFIER = "bin";
+    static final String WINSW_TYPE = "exe";
 
     /**
      * The directory location for the generated zip.
@@ -73,22 +78,34 @@ public class PackageMojo extends AbstractMojo {
             addWinsw(archiver);
             archiver.createArchive();
         } catch (NoSuchArchiverException e) {
-            String message = "Cannot create archiver for type " + ZIP_TYPE;
-            getLog().error(message);
-            throw new MojoExecutionException(message, e);
+            throw new MojoExecutionException("Cannot create archiver for type " + ZIP_TYPE, e);
         } catch (IOException e) {
-            String message = "Failed to create file '" + file + "'";
-            getLog().error(message);
-            throw new MojoExecutionException(message, e);
+            throw new MojoExecutionException("Failed to create file '" + file + "'", e);
         }
     }
 
 
     private void addWinsw(Archiver archiver) throws MojoExecutionException, IOException {
 
-        // TODO: Get real file from plugin dependencies
-        File winswFile = new File(outputDirectory, WINSW_EXE_FILENAME);
-        winswFile.createNewFile();
+        File winswFile = null;
+        Set<Artifact> dependencies = project.getDependencyArtifacts();
+        for (Artifact dependency : dependencies) {
+            if (isWinSw(dependency)) {
+               winswFile = dependency.getFile();
+               break;
+            }
+        }
+
+        if (winswFile == null) {
+            throw new MojoExecutionException("Could not find winsw artifact");
+        }
         archiver.addFile(winswFile, WINSW_EXE_FILENAME);
+    }
+
+    private boolean isWinSw(Artifact artifact) {
+        return WINSW_GROUPID.equals(artifact.getGroupId()) &&
+                WINSW_ARTIFACTID.equals(artifact.getArtifactId()) &&
+                WINSW_CLASSIFIER.equals(artifact.getClassifier()) &&
+                WINSW_TYPE.equals(artifact.getType());
     }
 }
