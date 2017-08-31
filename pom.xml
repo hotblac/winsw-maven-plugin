@@ -27,25 +27,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>jenkins</id>
-            <name>Jenkins Repository</name>
-            <url>http://repo.jenkins-ci.org/releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencies>
-        <dependency>
-            <groupId>com.sun.winsw</groupId>
-            <artifactId>winsw</artifactId>
-            <version>${winswVersion}</version>
-            <classifier>bin</classifier>
-            <type>exe</type>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
