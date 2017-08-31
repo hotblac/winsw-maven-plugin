@@ -2,6 +2,8 @@ package org.dontpanic.plugins.winsw;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Build;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.stubs.ArtifactStub;
 import org.apache.maven.plugin.testing.stubs.MavenProjectStub;
@@ -13,6 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -43,11 +46,14 @@ public class PackageMojoTest {
     private static final String DEFAULT_FILE_NAME = "defaultFileName";
     private static final File DEFAULT_OUTPUT_DIR = new File("target/test-output/");
     private static final String DEFAULT_POM_PATH = "src/test/resources/unit/winsw-maven-plugin-test/pom.xml";
+    private static final String DEFAULT_PROJECT_BUILD_FINAL_NAME = "artifactName";
 
-    @Rule
-    public MojoRule mojoRule = new MojoRule();
+    @Rule public MojoRule mojoRule = new MojoRule();
+    @Rule public ExpectedException expectedException = ExpectedException.none();
 
     private MavenProject mavenProject = new MavenProjectStub();
+    private Build build = new Build();
+
     @Mock private MavenProjectHelper projectHelper;
     @Mock private ArchiverManager archiverManager;
 
@@ -59,6 +65,11 @@ public class PackageMojoTest {
         Set<Artifact> dependencies = new HashSet<>();
         dependencies.add(winswArtifact());
         mavenProject.setDependencyArtifacts(dependencies);
+
+        build.setFinalName(DEFAULT_PROJECT_BUILD_FINAL_NAME);
+        mavenProject.setBuild(build);
+        mavenProject.setPackaging("jar");
+        mavenProject.setArtifact(projectArtifact());
     }
 
     @After
@@ -103,6 +114,7 @@ public class PackageMojoTest {
         assertTrue(expectedNewFile.exists());
     }
 
+    @Test
     public void zipFile_containsWinSwExe() throws Exception {
         PackageMojo mojo = getMojoWithDefaultConfig();
         mojo.execute();
@@ -111,6 +123,32 @@ public class PackageMojoTest {
 
         ZipEntry winswEntry = zipFile.getEntry(WINSW_EXE_FILENAME);
         assertNotNull(winswEntry);
+    }
+
+    @Test
+    public void zipFile_containsProjectArtifactJar() throws Exception {
+
+        String artifactName = "myProjectArtifact";
+        build.setFinalName(artifactName);
+
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
+        File createdFile = new File(DEFAULT_OUTPUT_DIR, DEFAULT_FILE_NAME + ".zip");
+        ZipFile zipFile = new ZipFile(createdFile);
+
+        ZipEntry projectArtifactEntry = zipFile.getEntry(artifactName + ".jar");
+        assertNotNull(projectArtifactEntry);
+    }
+
+    @Test
+    public void mojoExecute_failsWhenProjectArtifactIsNotJar() throws Exception {
+
+        expectedException.expect(MojoExecutionException.class);
+
+        mavenProject.setPackaging("war");
+
+        PackageMojo mojo = getMojoWithDefaultConfig();
+        mojo.execute();
     }
 
     @Test
@@ -159,6 +197,12 @@ public class PackageMojoTest {
         PackageMojo mojo = (PackageMojo) mojoRule.lookupMojo( "package", pomFile );
         assertNotNull( mojo );
         return mojo;
+    }
+
+    private Artifact projectArtifact() {
+        Artifact artifact = new ArtifactStub();
+        artifact.setFile(new File("src/test/resources/unit/winsw-maven-plugin-test/projectArtifact.jar"));
+        return artifact;
     }
 
     private Artifact winswArtifact() {

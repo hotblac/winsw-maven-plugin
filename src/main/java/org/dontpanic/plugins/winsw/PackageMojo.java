@@ -66,6 +66,9 @@ public class PackageMojo extends AbstractMojo {
     private ArchiverManager archiverManager;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+
+        verifyProjectIsValid();
+
         File assemblyFile = new File(outputDirectory, packageName + ".zip");
         createAssemblyFile(assemblyFile);
         projectHelper.attachArtifact(project, ZIP_TYPE, classifier, assemblyFile);
@@ -75,6 +78,7 @@ public class PackageMojo extends AbstractMojo {
         try {
             Archiver archiver = archiverManager.getArchiver(ZIP_TYPE);
             archiver.setDestFile(file);
+            addProjectArtifact(archiver);
             addWinsw(archiver);
             archiver.createArchive();
         } catch (NoSuchArchiverException e) {
@@ -82,6 +86,25 @@ public class PackageMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to create file '" + file + "'", e);
         }
+    }
+
+
+    private void verifyProjectIsValid() throws MojoExecutionException {
+        final String packaging = project.getPackaging();
+        if (!"jar".equals(packaging)) {
+            throw new MojoExecutionException("winsw package mojo expects jar project artifact." +
+                    " This is a " + packaging + " project");
+        }
+    }
+
+    private void addProjectArtifact(Archiver archiver) throws MojoExecutionException {
+        File artifactFile = project.getArtifact().getFile();
+        if (artifactFile == null) {
+            throw new MojoExecutionException("Could not find project artifact");
+        }
+
+        String artifactFileName = project.getBuild().getFinalName() + ".jar";
+        archiver.addFile(artifactFile, artifactFileName);
     }
 
 
